@@ -3,12 +3,10 @@
 #include <string.h>
 
 #define MAX_IP_SIZE 15
-#define MAX_IFACE_SIZE 20
 
 struct node {
     int counter;
     char ip[MAX_IP_SIZE];
-    // char iface[MAX_IFACE_SIZE];
     struct node* left;
     struct node* right;
 };
@@ -18,8 +16,6 @@ void insertNode(int counter, char* ip, struct node** leaf) {
         *leaf = (struct node*)malloc(sizeof(struct node));
         (*leaf)->counter = counter;
         strcpy((*leaf)->ip, ip);
-        // (*leaf)->ip = ip;
-        // (*leaf)->iface = iface;
         (*leaf)->left = 0;
         (*leaf)->right = 0;
         return;
@@ -64,28 +60,46 @@ void printTree(struct node* tree) {
     }
 }
 
-int main() {
-    struct node* Tree;
+void saveTree(struct node* tree, FILE* file) {
+    // FILE* f;
 
-    Tree = NULL;
-
-    insertNode(12, "10.11.2.3", &Tree);
-    insertNode(12, "10.11.2.1", &Tree);
-    insertNode(12, "10.11.2.4", &Tree);
-    insertNode(12, "10.11.2.2", &Tree);
-    insertNode(12, "10.11.2.1", &Tree);
-    printTree(Tree);
-    destroyTree(Tree);
-    // listInit(&list, SIZE);
-    // listReport(&list);
-    // listAdd(&list, 5, 80);
-    // printf("Count %d\n", listElementCount(&list, 4));
-    // listPrint(&list);
-    // listReport(&list);
-    // listClear(&list);
-    // listReport(&list);
-    // listDestructor(&list);
-    // listReport(&list);
-
-    return 0;
+    if ( tree != 0 ) {
+        fwrite(tree, sizeof(tree), sizeof(char), file);
+        saveTree(tree->left, file);
+        saveTree(tree->right, file);
+    }
 }
+
+void recoverTree(struct node* tree, FILE* file) {
+    if ( tree != 0 ) {
+        fread(tree, sizeof(tree), sizeof(char), file);
+        recoverTree(tree->left, file);
+        recoverTree(tree->right, file);
+    }
+}
+
+// int main() {
+//     struct node* Tree;
+
+//     Tree = NULL;
+
+//     insertNode(12, "10.11.2.3", &Tree);
+//     insertNode(12, "10.11.2.1", &Tree);
+//     insertNode(12, "10.11.2.4", &Tree);
+//     insertNode(12, "10.11.2.2", &Tree);
+//     insertNode(12, "10.11.2.1", &Tree);
+//     printTree(Tree);
+//     destroyTree(Tree);
+//     // listInit(&list, SIZE);
+//     // listReport(&list);
+//     // listAdd(&list, 5, 80);
+//     // printf("Count %d\n", listElementCount(&list, 4));
+//     // listPrint(&list);
+//     // listReport(&list);
+//     // listClear(&list);
+//     // listReport(&list);
+//     // listDestructor(&list);
+//     // listReport(&list);
+
+//     return 0;
+// }
