@@ -31,10 +31,14 @@ void LogMessage(char* message, char* error);
 void daemonize();
 void signal_handler(int sig);
 void socket_server();
-void sniff_packets(char* interface);
+void sniff_packets();
 void backup_data(char* file_name, struct node* tree);
 
+// Default iface.
+
 static char interface[15] = "wlp3s0";
+
+// Put given stings to log file with current time
 
 void LogMessage(char* message, char* error) {
     struct tm* timeinfo;
@@ -51,6 +55,8 @@ void LogMessage(char* message, char* error) {
     fclose(logs);
 }
 
+// Logs message about inc signals
+
 void signal_handler(int sig) {
     switch (sig) {
         case SIGHUP:
@@ -62,6 +68,8 @@ void signal_handler(int sig) {
             break;
     }
 }
+
+// Daemonize current app
 
 void daemonize() {
     pid_t pid;
@@ -120,8 +128,9 @@ void daemonize() {
     signal(SIGTTIN,SIG_IGN);
     signal(SIGHUP,signal_handler);
     signal(SIGTERM,signal_handler);
-
 }
+
+// Start server for communication with user appl. Used Unix Sockets
 
 void socket_server() {
     int s, s2, len, pid;
@@ -176,8 +185,10 @@ void socket_server() {
                         LogMessage("[Unix socket] fork error", strerror(errno));
                         break;
                     } else if (pid == 0) {
-                        sniff_packets(interface);
+                        // child
+                        sniff_packets();
                     } else {
+                        // parent, save child PID
                         pid_ch = pid;
                         need_child = 0;
                     }
@@ -190,6 +201,7 @@ void socket_server() {
                 LogMessage("Stop sniffing packets", interface);
 
                 if (pid_ch > 0) {
+                    // terminate child proc
                     kill(pid_ch, SIGTERM);
                     need_child = 1;
                 }
@@ -208,7 +220,9 @@ void socket_server() {
     return;
 }
 
-void sniff_packets(char* interface) {
+// Sniff default iface, read info from database and put new info back to database 
+
+void sniff_packets() {
     int saddr_size , data_size;
     int sock_raw;
     struct sockaddr_in saddr;
@@ -225,9 +239,9 @@ void sniff_packets(char* interface) {
     strcpy(file_name, DATABASES_HOMEDIR);
     strcat(file_name, interface);
      
-    f = fopen(file_name, "rb");
-
-    restoreTree(&tree, f);
+    if ((f = fopen(file_name, "rb")) > 0 ) {
+        restoreTree(&tree, f);
+    }
 
     sock_raw = socket( AF_PACKET , SOCK_RAW , htons(ETH_P_ALL)) ;
 
@@ -251,10 +265,13 @@ void sniff_packets(char* interface) {
         iph = (struct iphdr *)(buffer  + sizeof(struct ethhdr) );
         saddr.sin_addr.s_addr = iph->saddr;
         ip = inet_ntoa(saddr.sin_addr);
+        LogMessage(ip, "");
         insertNode(data_size, ip, &tree);
         backup_data(file_name, tree);
     }
 }
+
+// Save data to file with interface name
 
 void backup_data(char* file_name, struct node* tree) {
     FILE* f;
