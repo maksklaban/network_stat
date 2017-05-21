@@ -4,6 +4,11 @@
 
 #define MAX_IP_SIZE 15
 
+struct request {
+    char option;
+    char argument[50];
+};
+
 struct node {
     int counter;
     char ip[MAX_IP_SIZE];
@@ -61,45 +66,18 @@ void printTree(struct node* tree) {
 }
 
 void saveTree(struct node* tree, FILE* file) {
-    // FILE* f;
-
-    if ( tree != 0 ) {
-        fwrite(tree, sizeof(tree), sizeof(char), file);
+    if (tree != 0) {
+        fwrite(tree, sizeof(struct node), sizeof(char), file);
         saveTree(tree->left, file);
         saveTree(tree->right, file);
     }
 }
 
 void recoverTree(struct node* tree, FILE* file) {
-    if ( tree != 0 ) {
-        fread(tree, sizeof(tree), sizeof(char), file);
-        recoverTree(tree->left, file);
-        recoverTree(tree->right, file);
+    tree = (struct node*)malloc(sizeof(struct node));
+
+    while (fread(tree, sizeof(struct node), sizeof(char), file) != 0) {
+        printf("IP-address - %s, Count - %d\n", tree->ip, tree->counter);
     }
 }
 
-// int main() {
-//     struct node* Tree;
-
-//     Tree = NULL;
-
-//     insertNode(12, "10.11.2.3", &Tree);
-//     insertNode(12, "10.11.2.1", &Tree);
-//     insertNode(12, "10.11.2.4", &Tree);
-//     insertNode(12, "10.11.2.2", &Tree);
-//     insertNode(12, "10.11.2.1", &Tree);
-//     printTree(Tree);
-//     destroyTree(Tree);
-//     // listInit(&list, SIZE);
-//     // listReport(&list);
-//     // listAdd(&list, 5, 80);
-//     // printf("Count %d\n", listElementCount(&list, 4));
-//     // listPrint(&list);
-//     // listReport(&list);
-//     // listClear(&list);
-//     // listReport(&list);
-//     // listDestructor(&list);
-//     // listReport(&list);
-
-//     return 0;
-// }
