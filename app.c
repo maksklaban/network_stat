@@ -11,9 +11,11 @@
 
 #include "container.c"
 
+// TODO: Implement config_file
+
 #define SOCK_PATH "echo_socket"
 #define MAX_BUFFER_SIZE 100
-#define DAEMON_HOMEDIR "/server"
+#define DAEMON_HOMEDIR "/tmp"
 #define DATABASES_HOMEDIR "/tmp/db/"
 
 char interface[20] = "wlp3s0";
@@ -21,7 +23,6 @@ char interface[20] = "wlp3s0";
 void print_data(char* interface) {
     char file_name[30];
     FILE* f;
-    struct node* tree = NULL;
 
     strcpy(file_name, DATABASES_HOMEDIR);
     strcat(file_name, interface);
@@ -30,25 +31,36 @@ void print_data(char* interface) {
         perror("Missing stat from iface");
         return;
     }
-    recoverTree(tree, f);
+    printTree(f, interface);
     fclose(f);
-    free(tree);
 }
 
 void print_all_data() {
     DIR *dp;
     struct dirent *ep;
     
-    dp = opendir (DATABASES_HOMEDIR);
+    dp = opendir(DATABASES_HOMEDIR);
+
     if (dp != NULL) {
-      while (ep = readdir(dp)){
-        puts (ep->d_name);
-      }
-      closedir (dp);
+        while (ep = readdir(dp)){
+            if (strcmp(ep->d_name, "..") != 0 && strcmp(ep->d_name, ".") != 0) {
+                print_data(ep->d_name);
+            }
+        }
+        closedir (dp);
     }
     else {
         perror ("Couldn't open the directory");
     }
+}
+
+void print_ip_info(char* ip) {
+    struct node* buffer;
+    char file_name[30];
+    FILE* f;
+
+    strcpy(file_name, DATABASES_HOMEDIR);
+    strcpy(file_name, interface);
 }
 
 void send_message(char* buffer) {
@@ -59,7 +71,10 @@ void send_message(char* buffer) {
         exit(1);
     }
 
-    chdir("/tmp");
+    if ((chdir(DAEMON_HOMEDIR)) < 0) {  
+        perror("[daemon]FAILED change the current directory");
+        exit(EXIT_FAILURE);
+    }
 
     remote.sun_family = AF_UNIX;
     strcpy(remote.sun_path, SOCK_PATH);
@@ -91,10 +106,8 @@ void print_help(char* app_name) {
 
 int main(int argc, char** argv) {
     struct request* reqv;
-    // struct node* tree;
     char str[MAX_BUFFER_SIZE];
     char* app_name = argv[0];
-    // FILE* f;
 
     int value;
 
@@ -149,6 +162,7 @@ int main(int argc, char** argv) {
             case('i'):
                 reqv->option = value;
                 strcpy(reqv->argument, optarg);
+                strcpy(interface, optarg);
                 send_message(str);
                 break;
             case('I'):
@@ -157,7 +171,6 @@ int main(int argc, char** argv) {
             case('c'):
                 reqv->option = value;
                 strcpy(reqv->argument, optarg);
-                // send_message(str);
                 break;
             case('h'):
                 print_help(app_name);
@@ -173,7 +186,6 @@ int main(int argc, char** argv) {
                 }
                 break;
             default:
-                // strcpy(str, "42");
                 break;
         }
         

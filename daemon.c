@@ -18,10 +18,10 @@
 
 #include "container.c"
 
+// TODO: Implement config_file
+
 #define MAX_BUFFER 65536
 #define SOCK_PATH "echo_socket"
-#define CHILD_NEED_TERMINATE 1
-#define PID_FILENAME "pid.txt"
 #define LOGS_FILENAME "logs.txt"
 #define LOCK_FILENAME "daemon.lock"
 #define DAEMON_HOMEDIR "/tmp"
@@ -32,7 +32,7 @@ void daemonize();
 void signal_handler(int sig);
 void socket_server();
 void sniff_packets(char* interface);
-void backup_data(char* interface, struct node* tree);
+void backup_data(char* file_name, struct node* tree);
 
 static char interface[15] = "wlp3s0";
 
@@ -41,8 +41,6 @@ void LogMessage(char* message, char* error) {
     FILE* logs;
     time_t rawtime;
     
-    // strcat(message, error);
-
     logs = fopen(LOGS_FILENAME, "a");
 
     time(&rawtime);
@@ -146,7 +144,6 @@ void socket_server() {
     len = strlen(local.sun_path) + sizeof(local.sun_family);
     
     if (bind(s, (struct sockaddr *)&local, len) == -1) {
-        // LogMessage()
         LogMessage("[Unix socket] Socket bind error ", strerror(errno));
         exit(1);
     }
@@ -159,7 +156,6 @@ void socket_server() {
     while(1) {
         int n;
         int t = sizeof(remote);
-        // int hopes = 100;
 
         if ((s2 = accept(s, (struct sockaddr *)&remote, &t)) < -1) {
             LogMessage("[Unix socket] accept error", strerror(errno));
@@ -175,7 +171,6 @@ void socket_server() {
 
         switch(reqv->option) {
             case('s'):
-                // need_child = 0;
                 if ( need_child > 0) {
                     if ((pid = fork()) < 0) {
                         LogMessage("[Unix socket] fork error", strerror(errno));
@@ -188,24 +183,21 @@ void socket_server() {
                     }
                 }
 
-                LogMessage("Start sniffing packets", NULL);
+                LogMessage("Start sniffing packets", interface);
                 break;
             case('S'):
-                // if (need_sniff ) {
-                // need_sniff = 0;
-                LogMessage("Stop sniffing packets", NULL);
+
+                LogMessage("Stop sniffing packets", interface);
 
                 if (pid_ch > 0) {
                     kill(pid_ch, SIGTERM);
                     need_child = 1;
                 }
-                // LogMessage(tree->ip, NULL);
-                // backup_data(inter    face, tree);
-                // }
+
                 break;
             case('i'):
                 strcpy(interface, reqv->argument);
-                LogMessage("Change default interface", NULL);
+                LogMessage("Change default interface", interface);
                 break;
             default:
                 break;
@@ -220,16 +212,22 @@ void sniff_packets(char* interface) {
     int saddr_size , data_size;
     int sock_raw;
     struct sockaddr_in saddr;
-    struct iphdr* iph;
     struct node* tree;
+    struct iphdr* iph;
     unsigned char buffer[MAX_BUFFER];
+    char file_name[50];
+    FILE* f;
     
     char* ip;
     
     memset(&saddr, 0, sizeof(saddr));
+
+    strcpy(file_name, DATABASES_HOMEDIR);
+    strcat(file_name, interface);
      
-    // FILE* f;
-    // f = fopen("wlp3s0", "wb");
+    f = fopen(file_name, "rb");
+
+    restoreTree(&tree, f);
 
     sock_raw = socket( AF_PACKET , SOCK_RAW , htons(ETH_P_ALL)) ;
 
@@ -254,21 +252,14 @@ void sniff_packets(char* interface) {
         saddr.sin_addr.s_addr = iph->saddr;
         ip = inet_ntoa(saddr.sin_addr);
         insertNode(data_size, ip, &tree);
-        backup_data(interface, tree);
+        backup_data(file_name, tree);
     }
-    // destroyTree(tree);
-    // LogMessage(tree->ip, "");
 }
 
-void backup_data(char* interface, struct node* tree) {
-    char file_name[50];
+void backup_data(char* file_name, struct node* tree) {
     FILE* f;
 
-    strcpy(file_name, DATABASES_HOMEDIR);
-    strcat(file_name, interface);
-
-    f = fopen("/tmp/db/wlp3s0", "wb");
-    // LogMessage(tree->ip, NULL);
+    f = fopen(file_name, "wb");
     saveTree(tree, f);
     fclose(f);
 }

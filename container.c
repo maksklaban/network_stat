@@ -57,11 +57,20 @@ struct node* searchNode(char* ip, struct node* leaf) {
     }
 }
 
-void printTree(struct node* tree) {
+void restoreTree(struct node** tree, FILE* file) {
+    struct node* buffer = (struct node*)malloc(sizeof(struct node));
+
+    while (fread(buffer, sizeof(struct node), sizeof(char), file) != 0) {
+        insertNode(buffer->counter, buffer->ip, tree);
+    }
+    free(buffer);
+}
+
+void printLeafs(struct node* tree) {
     if ( tree != 0 ) {
         printf("IP-address - %s, Count - %d\n", tree->ip, tree->counter);
-        printTree(tree->left);
-        printTree(tree->right);
+        printLeafs(tree->left);
+        printLeafs(tree->right);
     }
 }
 
@@ -73,11 +82,14 @@ void saveTree(struct node* tree, FILE* file) {
     }
 }
 
-void recoverTree(struct node* tree, FILE* file) {
-    tree = (struct node*)malloc(sizeof(struct node));
+void printTree(FILE* file, char* interface) {
+    struct node* tree = (struct node*)malloc(sizeof(struct node));
 
+    printf("Current iface: %s\n", interface);
     while (fread(tree, sizeof(struct node), sizeof(char), file) != 0) {
         printf("IP-address - %s, Count - %d\n", tree->ip, tree->counter);
     }
+
+    free(tree);
 }
 
