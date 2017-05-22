@@ -1,20 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "container.h"
 
-#define MAX_IP_SIZE 15
-
-struct request {
-    char option;
-    char argument[50];
-};
-
-struct node {
-    int counter;
-    char ip[MAX_IP_SIZE];
-    struct node* left;
-    struct node* right;
-};
 
 void insertNode(int counter, char* ip, struct node** leaf) {
     if ( *leaf == 0 ) {
@@ -55,6 +40,7 @@ struct node* searchNode(char* ip, struct node* leaf) {
     } else {
         searchNode(ip, leaf->left);
     }
+    return 0;
 }
 
 void restoreTree(struct node** tree, FILE* file) {

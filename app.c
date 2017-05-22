@@ -10,7 +10,7 @@
 #include <dirent.h>
 #include <ifaddrs.h>
 
-#include "container.c"
+#include "container.h"
 
 // TODO: Implement config_file
 
@@ -22,6 +22,15 @@
 char interface[20] = "wlp3s0";
 
 // Check current iface if exist
+
+int check_iface(char* iface, char* iface_list[], int size);
+void print_all_ifaces(char* iface_list[], int size);
+int save_all_ifaces(char* iface_list[]);
+void print_data(char* interface);
+void print_all_data();
+void print_ip_info(char* ip);
+void send_message(char* buffer);
+void print_help(char* app_name);
 
 int check_iface(char* iface, char* iface_list[], int size) {
     for ( int i = 0; i <= size; i++ ) {
@@ -92,7 +101,7 @@ void print_all_data() {
     dp = opendir(DATABASES_HOMEDIR);
 
     if (dp != NULL) {
-        while (ep = readdir(dp)){
+        while ((ep = readdir(dp)) != NULL){
             if (strcmp(ep->d_name, "..") != 0 && strcmp(ep->d_name, ".") != 0) {
                 print_data(ep->d_name);
             }
@@ -137,7 +146,7 @@ void print_ip_info(char* ip) {
 // Send to daemon users commands
 
 void send_message(char* buffer) {
-    int s, t, len;
+    int s, len;
     struct sockaddr_un remote;
     if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         perror("socket");

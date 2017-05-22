@@ -16,7 +16,7 @@
 #include <time.h>
 #include <getopt.h>
 
-#include "container.c"
+#include "container.h"
 
 // TODO: Implement config_file
 
